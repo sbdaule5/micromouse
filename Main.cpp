@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <queue>
-// #include <pair>
 #include <utility>
 #include <string>
 
@@ -19,9 +18,10 @@ enum Direction{
 char directions[] = {'e', 'n', 'w', 's'};
 class Node{
 public:
-    bool walls[4] = {true, true, true, true};
+    bool walls[4] = {false, false, false, false};
     int value = 1000;
     bool initilized = false;
+    bool visited = false;
     int x, y;
     void init(Direction facing, bool frontWall, bool leftWall, bool rightWall)
     {
@@ -51,6 +51,12 @@ int main(int argc, char* argv[]) {
 
     API::setColor(0, 0, 'G');
     API::setText(0, 0, "start");
+    for(int i = 0; i < 16; i++){
+        nodes[0][i].walls[WEST] = true;
+        nodes[0][16 - i].walls[EAST] = true;
+        nodes[i][0].walls[WEST] = true;
+        nodes[16 - i][i].walls[WEST] = true;
+    }
 
     while (true) {
         nodes[x][y].init(facing, API::wallFront(), API::wallLeft(), API::wallRight());
@@ -67,11 +73,14 @@ int main(int argc, char* argv[]) {
             nodes[i/16][i%16].value = 1000;
         }
         queue<pair<int, int>> q;
-        q.push(make_pair(0, 0));
+        q.push(make_pair(8, 8));
         std::cerr << q.size() << std::endl;
-        nodes[0][0].value = 0;
+        nodes[7][7].value = 0;
+        nodes[7][8].value = 0;
+        nodes[8][7].value = 0;
+        nodes[8][8].value = 0;
         while(!q.empty()){
-            std::cerr << q.size() << std::endl;
+            // std::cerr << q.size() << std::endl;
             pair<int, int> pos = q.front();
             q.pop();
             Node& cr = nodes[pos.first][pos.second];
@@ -81,7 +90,7 @@ int main(int argc, char* argv[]) {
                 if (next.initilized == false){
                     if(next.value > cr.value + 1) next.value = cr.value + 1;
                     API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
                     q.push(make_pair(next.x, next.y));
                     next.initilized = true;
                 }
@@ -91,7 +100,7 @@ int main(int argc, char* argv[]) {
                 if (next.initilized == false){
                     if(next.value > cr.value + 1) next.value = cr.value + 1;
                     API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
                     q.push(make_pair(next.x, next.y));
                 }
             }
@@ -100,7 +109,7 @@ int main(int argc, char* argv[]) {
                 if (next.initilized == false){
                     if(next.value > cr.value + 1) next.value = cr.value + 1;
                     API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
                     q.push(make_pair(next.x, next.y));
                 }
             }
@@ -109,7 +118,7 @@ int main(int argc, char* argv[]) {
                 if (next.initilized == false){
                     if(next.value > cr.value + 1) next.value = cr.value + 1;
                     API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
                     q.push(make_pair(next.x, next.y));
                 }
             }
@@ -140,5 +149,6 @@ int main(int argc, char* argv[]) {
                 break;
         }
         API::setColor(x, y, 'G');
+        nodes[x][y].visited = true;
     }
 }

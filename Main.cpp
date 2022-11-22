@@ -3,6 +3,7 @@
 #include <queue>
 #include <utility>
 #include <string>
+#include <vector>
 
 #include "API.h"
 
@@ -72,57 +73,62 @@ int main(int argc, char* argv[]) {
             nodes[i/16][i%16].initilized = false;
             nodes[i/16][i%16].value = 1000;
         }
-        queue<pair<int, int>> q;
+        vector<pair<int, int>> q;
+        vector<pair<int, int>> nextQ;
         q.push(make_pair(8, 8));
         std::cerr << q.size() << std::endl;
         nodes[7][7].value = 0;
         nodes[7][8].value = 0;
         nodes[8][7].value = 0;
         nodes[8][8].value = 0;
-        while(!q.empty()){
-            // std::cerr << q.size() << std::endl;
-            pair<int, int> pos = q.front();
-            q.pop();
-            Node& cr = nodes[pos.first][pos.second];
-            cr.initilized = true;
-            if(cr.walls[NORTH] == false){
-                Node& next = nodes[cr.x][cr.y+1];
-                if (next.initilized == false){
-                    if(next.value > cr.value + 1) next.value = cr.value + 1;
-                    API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-                    q.push(make_pair(next.x, next.y));
-                    next.initilized = true;
-                }
-            }
-            if(cr.walls[SOUTH] == false){
-                Node& next = nodes[cr.x][cr.y-1];
-                if (next.initilized == false){
-                    if(next.value > cr.value + 1) next.value = cr.value + 1;
-                    API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-                    q.push(make_pair(next.x, next.y));
-                }
-            }
-            if(cr.walls[EAST] == false){
-                Node& next = nodes[cr.x+1][cr.y];
-                if (next.initilized == false){
-                    if(next.value > cr.value + 1) next.value = cr.value + 1;
-                    API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-                    q.push(make_pair(next.x, next.y));
-                }
-            }
-            if(cr.walls[WEST] == false){
-                Node& next = nodes[cr.x-1][cr.y];
-                if (next.initilized == false){
-                    if(next.value > cr.value + 1) next.value = cr.value + 1;
-                    API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-                    q.push(make_pair(next.x, next.y));
-                }
-            }
+        while(false){//(!q.empty()){
+        //     // std::cerr << q.size() << std::endl;
+        //     pair<int, int> pos = q.front();
+        //     q.pop();
+        //     Node& cr = nodes[pos.first][pos.second];
+        //     cr.initilized = true;
+        //     if(cr.walls[NORTH] == false){
+        //         Node& next = nodes[cr.x][cr.y+1];
+        //         if (next.initilized == false){
+        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
+        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
+        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+        //             q.push(make_pair(next.x, next.y));
+        //             next.initilized = true;
+        //         }
+        //     }
+        //     if(cr.walls[SOUTH] == false){
+        //         Node& next = nodes[cr.x][cr.y-1];
+        //         if (next.initilized == false){
+        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
+        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
+        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+        //             q.push(make_pair(next.x, next.y));
+        //         }
+        //     }
+        //     if(cr.walls[EAST] == false){
+        //         Node& next = nodes[cr.x+1][cr.y];
+        //         if (next.initilized == false){
+        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
+        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
+        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+        //             q.push(make_pair(next.x, next.y));
+        //         }
+        //     }
+        //     if(cr.walls[WEST] == false){
+        //         Node& next = nodes[cr.x-1][cr.y];
+        //         if (next.initilized == false){
+        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
+        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
+        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
+        //             q.push(make_pair(next.x, next.y));
+        //         }
+        //     }
         }
+        do{
+
+        }while(!nextQ.empty())
+        
         if (!API::wallLeft()) {
             API::turnLeft();
             facing = (Direction)((facing+1)%4);

@@ -125,6 +125,7 @@ int main(int argc, char* argv[]) {
         //         }
         //     }
         }
+
         // remake this part using technique told in video
         if(!(smallest != UNINITILIZED)){
             

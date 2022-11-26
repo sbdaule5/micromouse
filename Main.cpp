@@ -24,7 +24,7 @@ char directions[] = {'e', 'n', 'w', 's', 'u'};
 class Node{
 public:
     bool walls[4] = {false, false, false, false};
-    int value = 1000;
+    int value = 0;
     bool initilized = false;
     bool visited = false;
     int x, y;
@@ -42,10 +42,6 @@ void log(const std::string& text) {
     std::cerr << text << std::endl;
 }
 
-// void floodFill(Node &(nodes[][]))
-// {
-    
-// }
 int main(int argc, char* argv[]) {
     log("Running...");
     int x = 0;
@@ -55,12 +51,13 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < 256; i++){
         nodes[i/16][i%16].x = i/16;
         nodes[i/16][i%16].y = i%16;
+        nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
+        API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
     }
 
     Direction facing = NORTH;
 
     API::setColor(0, 0, 'G');
-    API::setText(0, 0, "start");
     for(int i = 0; i < 16; i++){
         nodes[0][i].walls[WEST] = true;
         nodes[0][16 - i].walls[EAST] = true;
@@ -78,133 +75,64 @@ int main(int argc, char* argv[]) {
             if (nodes[x][y].walls[i]) API::setWall(x, y, directions[i]);
         }
 
-
         // calculating next cell and moving to it
-
-        while(false){//(!q.empty()){
-        //     // std::cerr << q.size() << std::endl;
-        //     pair<int, int> pos = q.front();
-        //     q.pop();
-        //     Node& cr = nodes[pos.first][pos.second];
-        //     cr.initilized = true;
-        //     if(cr.walls[NORTH] == false){
-        //         Node& next = nodes[cr.x][cr.y+1];
-        //         if (next.initilized == false){
-        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
-        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
-        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-        //             q.push(make_pair(next.x, next.y));
-        //             next.initilized = true;
-        //         }
-        //     }
-        //     if(cr.walls[SOUTH] == false){
-        //         Node& next = nodes[cr.x][cr.y-1];
-        //         if (next.initilized == false){
-        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
-        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
-        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-        //             q.push(make_pair(next.x, next.y));
-        //         }
-        //     }
-        //     if(cr.walls[EAST] == false){
-        //         Node& next = nodes[cr.x+1][cr.y];
-        //         if (next.initilized == false){
-        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
-        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
-        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-        //             q.push(make_pair(next.x, next.y));
-        //         }
-        //     }
-        //     if(cr.walls[WEST] == false){
-        //         Node& next = nodes[cr.x-1][cr.y];
-        //         if (next.initilized == false){
-        //             if(next.value > cr.value + 1) next.value = cr.value + 1;
-        //             API::setText(next.x, next.y, std::to_string(next.value).c_str());
-        //             // std::cerr << "Pushing " << next.x << ", " << next.y << "to queue it is initilized?" << next.initilized << std::endl;
-        //             q.push(make_pair(next.x, next.y));
-        //         }
-        //     }
-        }
-
-        // remake this part using technique told in video
         if(!(smallest != UNINITILIZED)){
-            
-            // clearing all nodes
-            for(int i = 0; i < 256; i++){
-                nodes[i/16][i%16].initilized = false;
-                nodes[i/16][i%16].value = 1000;
-            }
-            vector<pair<int, int>> q;
-            vector<pair<int, int>> nextQ;
-            q.push_back(make_pair(8, 8));
-            // std::cerr << q.size() << std::endl;
-            nodes[7][7].value = 0;
-            nodes[7][8].value = 0;
-            nodes[8][7].value = 0;
-            nodes[8][8].value = 0;
-            nodes[7][7].initilized = true;
-            nodes[7][8].initilized = true;
-            nodes[8][7].initilized = true;
-            nodes[8][8].initilized = true;
+            queue<pair<int, int>> q;
+            q.push(make_pair(x, y));
+            q.push(make_pair(x + 1, y));
+            q.push(make_pair(x - 1, y));
+            q.push(make_pair(x, y + 1));
+            q.push(make_pair(x, y - 1));
 
-            // remake this part
             do{
-                for(auto pos : nextQ){
-                    //move all elements of next q to the q and empty nextq
-                    if(nodes[pos.first][pos.second].value != 1000){
-                        q.push_back(pos);
-                    }
-                    nodes[pos.first][pos.second].initilized = true;
+                pair<int, int> crNodePos = q.front();
+                q.pop();
+                Node& cr = nodes[crNodePos.first][crNodePos.second];
+                Node* neighbours[4];
+                int neighboursFound = 0;
+                int minFound = cr.value;
+
+                if((crNodePos.first == 7 || crNodePos.first == 8) && (crNodePos.second == 7 || crNodePos.second == 8)){
+                    continue;
                 }
-                nextQ.erase(nextQ.begin(), nextQ.end());
-                for(auto crNodePos: q){
-                    Node& cr = nodes[crNodePos.first][crNodePos.second];
-                    if(cr.walls[NORTH] == false){
-                        Node& next = nodes[crNodePos.first][crNodePos.second+1];
-                        bool found = (q.end() != std::find(q.begin(), q.end(), make_pair(next.x, next.y)));
-                        // bool found = cr.initilized;
-                        bool added = (nextQ.end() != std::find(nextQ.begin(), nextQ.end(), make_pair(next.x, next.y)));
-                        if(!found && !added){
-                            nextQ.push_back(make_pair(next.x, next.y));
-                        }
-                        if(next.value > cr.value + 1) next.value = cr.value + 1;
-                        API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    }
-                    if(cr.walls[SOUTH] == false){
-                        Node& next = nodes[crNodePos.first][crNodePos.second-1];
-                        bool found = (q.end() != std::find(q.begin(), q.end(), make_pair(next.x, next.y)));
-                        // bool found = cr.initilized;
-                        bool added = (nextQ.end() != std::find(nextQ.begin(), nextQ.end(), make_pair(next.x, next.y)));
-                        if(!found && !added){
-                            nextQ.push_back(make_pair(next.x, next.y));
-                        }
-                        if(next.value > cr.value + 1) next.value = cr.value + 1;
-                        API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    }
-                    if(cr.walls[EAST] == false){
-                        Node& next = nodes[crNodePos.first+1][crNodePos.second];
-                        bool found = (q.end() != std::find(q.begin(), q.end(), make_pair(next.x, next.y)));
-                        // bool found = cr.initilized;
-                        bool added = (nextQ.end() != std::find(nextQ.begin(), nextQ.end(), make_pair(next.x, next.y)));
-                        if(!found && !added){
-                            nextQ.push_back(make_pair(next.x, next.y));
-                        }
-                        if(next.value > cr.value + 1) next.value = cr.value + 1;
-                        API::setText(next.x, next.y, std::to_string(next.value).c_str());
-                    }
-                    if(cr.walls[WEST] == false){
-                        Node& next = nodes[crNodePos.first-1][crNodePos.second];
-                        bool found = (q.end() != std::find(q.begin(), q.end(), make_pair(next.x, next.y)));
-                        // bool found = cr.initilized;
-                        bool added = (nextQ.end() != std::find(nextQ.begin(), nextQ.end(), make_pair(next.x, next.y)));
-                        if(!found && !added){
-                            nextQ.push_back(make_pair(next.x, next.y));
-                        }
-                        if(next.value > cr.value + 1) next.value = cr.value + 1;
-                        API::setText(next.x, next.y, std::to_string(next.value).c_str());
+                if(crNodePos.first > 15 || crNodePos.first < 0 || crNodePos.second > 15 || crNodePos.first < 0){
+                    continue;
+                }
+
+                if(cr.walls[NORTH] == false){
+                    Node& next = nodes[crNodePos.first][crNodePos.second+1];
+                    minFound = std::min(minFound, next.value);
+                    neighbours[neighboursFound] = &next;
+                    neighboursFound++;
+                }
+                if(cr.walls[SOUTH] == false){
+                    Node& next = nodes[crNodePos.first][crNodePos.second-1];
+                    minFound = std::min(minFound, next.value);
+                    neighbours[neighboursFound] = &next;
+                    neighboursFound++;
+                }
+                if(cr.walls[EAST] == false){
+                    Node& next = nodes[crNodePos.first+1][crNodePos.second];
+                    minFound = std::min(minFound, next.value);
+                    neighbours[neighboursFound] = &next;
+                    neighboursFound++;
+                }
+                if(cr.walls[WEST] == false){
+                    Node& next = nodes[crNodePos.first-1][crNodePos.second];
+                    minFound = std::min(minFound, next.value);
+                    neighbours[neighboursFound] = &next;
+                    neighboursFound++;
+                }
+
+                // compairing neighbours
+                if(minFound >= cr.value){
+                    cr.value = minFound + 1;
+                    API::setText(cr.x, cr.y, std::to_string(cr.value).c_str());
+                    for(int j = 0; j < neighboursFound; j++){
+                        q.push(make_pair(neighbours[j]->x, neighbours[j]->y));    
                     }
                 }
-            }while(!nextQ.empty());
+            }while(!q.empty());
         }
         
         // move to smallest neighbouring nodes
@@ -236,16 +164,6 @@ int main(int argc, char* argv[]) {
             facing = (Direction)((facing+3)%4);
         }
         API::moveForward();
-
-        // if (!API::wallLeft()) {
-        //     API::turnLeft();
-        //     facing = (Direction)((facing+1)%4);
-        // }
-        // while (API::wallFront()) {
-        //     API::turnRight();
-        //     facing = (Direction)((facing+3)%4);
-        // }
-        // API::moveForward();
 
         // update value of current position
         switch(facing){

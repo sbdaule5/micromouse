@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
     int y = 0;
     int state = 0; // 0 is going to center
                    // 1 is returning to start
+    int changed = 0;
     Direction smallest;
     Node nodes[64][64];
     for(int i = 0; i < 256; i++){
@@ -80,11 +81,19 @@ int main(int argc, char* argv[]) {
         // calculating next cell and moving to it
         if(!(smallest != UNINITILIZED)){
             queue<pair<int, int>> q;
-            q.push(make_pair(x, y));
-            q.push(make_pair(x + 1, y));
-            q.push(make_pair(x - 1, y));
-            q.push(make_pair(x, y + 1));
-            q.push(make_pair(x, y - 1));
+            if(!changed){
+                q.push(make_pair(x, y));
+                q.push(make_pair(x + 1, y));
+                q.push(make_pair(x - 1, y));
+                q.push(make_pair(x, y + 1));
+                q.push(make_pair(x, y - 1));
+            }
+            else{
+                for(int i = 0; i < 256; i++){
+                    q.push(make_pair(i/16, i%16));
+                }
+                changed = 0;
+            }
 
             do{
                 pair<int, int> crNodePos = q.front();
@@ -195,6 +204,8 @@ int main(int argc, char* argv[]) {
         if(state == 0){
             if((x == 7 || x == 8) && (y == 7 || y == 8)){
                 state = 1;
+                changed = 1;
+                smallest = UNINITILIZED;
                 for(int i = 0; i < 256; i++){
                     nodes[i/16][i%16].value = i/16 + i%16;
                     API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
@@ -204,6 +215,8 @@ int main(int argc, char* argv[]) {
         else if(state == 1){
             if(x == 0 && y == 0){
                state = 0; 
+               changed = 1;
+               smallest = UNINITILIZED;
                for(int i = 0; i < 256; i++){
                    nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
                    API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());

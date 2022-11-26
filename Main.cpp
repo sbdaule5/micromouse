@@ -46,6 +46,8 @@ int main(int argc, char* argv[]) {
     log("Running...");
     int x = 0;
     int y = 0;
+    int state = 0; // 0 is going to center
+                   // 1 is returning to start
     Direction smallest;
     Node nodes[64][64];
     for(int i = 0; i < 256; i++){
@@ -92,9 +94,17 @@ int main(int argc, char* argv[]) {
                 int neighboursFound = 0;
                 int minFound = cr.value;
 
-                if((crNodePos.first == 7 || crNodePos.first == 8) && (crNodePos.second == 7 || crNodePos.second == 8)){
-                    continue;
+                if(state == 0){
+                    if((crNodePos.first == 7 || crNodePos.first == 8) && (crNodePos.second == 7 || crNodePos.second == 8)){
+                        continue;
+                    }
                 }
+                else{
+                    if(crNodePos.first == 0 && crNodePos.second == 0){
+                        continue;
+                    }
+                }
+                // ignore if out of bounds
                 if(crNodePos.first > 15 || crNodePos.first < 0 || crNodePos.second > 15 || crNodePos.first < 0){
                     continue;
                 }
@@ -182,5 +192,23 @@ int main(int argc, char* argv[]) {
         }
         API::setColor(x, y, 'G');
         nodes[x][y].visited = true;
+        if(state == 0){
+            if((x == 7 || x == 8) && (y == 7 || y == 8)){
+                state = 1;
+                for(int i = 0; i < 256; i++){
+                    nodes[i/16][i%16].value = i/16 + i%16;
+                    API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+                }
+            }
+        }
+        else if(state == 1){
+            if(x == 0 && y == 0){
+               state = 0; 
+               for(int i = 0; i < 256; i++){
+                   nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
+                   API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+               }
+            }
+        }
     }
 }

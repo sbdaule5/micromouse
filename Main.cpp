@@ -48,7 +48,7 @@ int getTurnDirection(Direction current, Direction target){
                     // +1 turn right
                     // -1 turn left
                     // 2 turn backwards
-    return((((current-target)+1)%4)-1);
+    return((((current-target)+5)%4)-1);
 }
 // char can be L, R, F depending on the type of movement required
 // You can modify this function to accomodate diagonal movements
@@ -218,11 +218,23 @@ int main(int argc, char* argv[]) {
             }
             if(smallest == UNINITILIZED) break;
             // change this so bot will make a single turn and not multiple
-            while (facing != smallest) {
-                movements[numMovements] = 'R';
-                numMovements++;
-                facing = (Direction)((facing+3)%4);
+            int turn = getTurnDirection(facing, smallest);
+            switch(turn){
+                case -1:
+                    movements[numMovements] = 'L';
+                    numMovements++;
+                    break;
+                case 1:
+                    movements[numMovements] = 'R';
+                    numMovements++;
+                    break;
+                case 2:
+                    movements[numMovements] = 'R';
+                    movements[numMovements + 1] = 'R';
+                    numMovements += 2;
+                    break;
             }
+            facing = smallest;
             movements[numMovements] = 'F';
             numMovements++;
 

@@ -42,13 +42,40 @@ void log(const std::string& text) {
     std::cerr << text << std::endl;
 }
 
+int getTurnDirection(Direction current, Direction target){
+    // function will return:
+                    // 0 no turn
+                    // +1 turn right
+                    // -1 turn left
+                    // 2 turn backwards
+    return((((current-target)+1)%4)-1);
+}
+// char can be L, R, F depending on the type of movement required
+// You can modify this function to accomodate diagonal movements
+void turnByString(char* movements){
+    int i = 0;
+    while(movements[i] != 0){
+        if(movements[i] == 'L'){
+            API::turnLeft();
+        }
+        if(movements[i] == 'R'){
+            API::turnRight();
+        }
+        if(movements[i] == 'F'){
+            API::moveForward();
+        }
+        i++;
+    }
+    std::cerr << i << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     log("Running...");
     int x = 0;
     int y = 0;
     int state = 0; // 0 is going to center
                    // 1 is returning to start
-    int changed = 0;
+    int changed = 0; // 1 is the state of bot has changed between 'going to center' and 'going to start'
     Direction smallest;
     Node nodes[64][64];
     for(int i = 0; i < 256; i++){
@@ -69,6 +96,9 @@ int main(int argc, char* argv[]) {
     }
 
     while (true) {
+        // updating wall information
+        API::setColor(x, y, 'G');
+        nodes[x][y].visited = true;
         nodes[x][y].init(facing, API::wallFront(), API::wallLeft(), API::wallRight());
         nodes[x][y+1].walls[SOUTH] = nodes[x][y].walls[NORTH];
         nodes[x][y-1].walls[NORTH] = nodes[x][y].walls[SOUTH];
@@ -78,9 +108,10 @@ int main(int argc, char* argv[]) {
             if (nodes[x][y].walls[i]) API::setWall(x, y, directions[i]);
         }
 
-        // calculating next cell and moving to it
+        // samllest == UNINITILIZED (written due to some bug) then flood fill
         if(!(smallest != UNINITILIZED)){
             queue<pair<int, int>> q;
+            // if changed is 0 add current cell and all its neighbours, o/w add all the cells to queue
             if(!changed){
                 q.push(make_pair(x, y));
                 q.push(make_pair(x + 1, y));
@@ -118,6 +149,7 @@ int main(int argc, char* argv[]) {
                     continue;
                 }
 
+                // Add all accessible neighbours to an array and keep track of its size
                 if(cr.walls[NORTH] == false){
                     Node& next = nodes[crNodePos.first][crNodePos.second+1];
                     minFound = std::min(minFound, next.value);
@@ -144,6 +176,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 // compairing neighbours
+                // if bot is stuck at a corner, then recalculate value of current cell and add all neighbours to the queue
                 if(minFound >= cr.value){
                     cr.value = minFound + 1;
                     API::setText(cr.x, cr.y, std::to_string(cr.value).c_str());
@@ -154,74 +187,85 @@ int main(int argc, char* argv[]) {
             }while(!q.empty());
         }
         
-        // move to smallest neighbouring nodes
-        smallest = UNINITILIZED;
-        //if no north wall then check north
-        if(nodes[x][y].walls[NORTH] == false){
-            if(nodes[x][y].value > nodes[x][y+1].value){
-                smallest = NORTH;
+        // we assume that 1000 movement are sufficient
+        char movements[1000];
+        int numMovements = 0;
+        // we will break out of this loop if bot is stuck and need flood fill to be run again(smallest == UNINITILIZED) or it has reached destination or it entered cell it hasn't visited before
+        while(nodes[x][y].visited && changed == 0){
+            // move to smallest neighbouring node
+            smallest = UNINITILIZED;
+            // this logic needs to be changed, bot should give higher preference to stright routes compaired to ones requiring turns
+            //if no north wall then check north
+            if(nodes[x][y].walls[NORTH] == false){
+                if(nodes[x][y].value > nodes[x][y+1].value){
+                    smallest = NORTH;
+                }
             }
-        }
-        if(nodes[x][y].walls[SOUTH] == false){
-            if(nodes[x][y].value > nodes[x][y-1].value){
-                smallest = SOUTH;
+            if(nodes[x][y].walls[SOUTH] == false){
+                if(nodes[x][y].value > nodes[x][y-1].value){
+                    smallest = SOUTH;
+                }
             }
-        }
-        if(nodes[x][y].walls[EAST] == false){
-            if(nodes[x][y].value > nodes[x+1][y].value){
-                smallest = EAST;
+            if(nodes[x][y].walls[EAST] == false){
+                if(nodes[x][y].value > nodes[x+1][y].value){
+                    smallest = EAST;
+                }
             }
-        }
-        if(nodes[x][y].walls[WEST] == false){
-            if(nodes[x][y].value > nodes[x-1][y].value){
-                smallest = WEST;
+            if(nodes[x][y].walls[WEST] == false){
+                if(nodes[x][y].value > nodes[x-1][y].value){
+                    smallest = WEST;
+                }
             }
-        }
-        if(smallest == UNINITILIZED) continue;
-        while (facing != smallest) {
-            API::turnRight();
-            facing = (Direction)((facing+3)%4);
-        }
-        API::moveForward();
+            if(smallest == UNINITILIZED) break;
+            // change this so bot will make a single turn and not multiple
+            while (facing != smallest) {
+                movements[numMovements] = 'R';
+                numMovements++;
+                facing = (Direction)((facing+3)%4);
+            }
+            movements[numMovements] = 'F';
+            numMovements++;
 
-        // update value of current position
-        switch(facing){
-            case SOUTH:
-                y--;
-                break;
-            case NORTH:
-                y++;
-                break;
-            case EAST:
-                x++;
-                break;
-            case WEST:
-                x--;
-                break;
-        }
-        API::setColor(x, y, 'G');
-        nodes[x][y].visited = true;
-        if(state == 0){
-            if((x == 7 || x == 8) && (y == 7 || y == 8)){
-                state = 1;
-                changed = 1;
-                smallest = UNINITILIZED;
-                for(int i = 0; i < 256; i++){
-                    nodes[i/16][i%16].value = i/16 + i%16;
-                    API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+            // update value of current position
+            switch(facing){
+                case SOUTH:
+                    y--;
+                    break;
+                case NORTH:
+                    y++;
+                    break;
+                case EAST:
+                    x++;
+                    break;
+                case WEST:
+                    x--;
+                    break;
+            }
+
+            if(state == 0){
+                if((x == 7 || x == 8) && (y == 7 || y == 8)){
+                    state = 1;
+                    changed = 1;
+                    smallest = UNINITILIZED;
+                    for(int i = 0; i < 256; i++){
+                        nodes[i/16][i%16].value = i/16 + i%16;
+                        API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+                    }
+                }
+            }
+            else if(state == 1){
+                if(x == 0 && y == 0){
+                    state = 0; 
+                    changed = 1;
+                    smallest = UNINITILIZED;
+                    for(int i = 0; i < 256; i++){
+                        nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
+                        API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+                    }
                 }
             }
         }
-        else if(state == 1){
-            if(x == 0 && y == 0){
-               state = 0; 
-               changed = 1;
-               smallest = UNINITILIZED;
-               for(int i = 0; i < 256; i++){
-                   nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
-                   API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
-               }
-            }
-        }
+        movements[numMovements] = 0;
+        turnByString(movements);
     }
 }

@@ -2,8 +2,6 @@
 #include <string>
 #include <queue>
 #include <utility>
-#include <string>
-#include <vector>
 #include <algorithm>
 
 #include "API.h"
@@ -21,6 +19,7 @@ enum Direction{
     UNINITILIZED
 };
 char directions[] = {'e', 'n', 'w', 's', 'u'};
+int MAZE_SIZE = 16;
 class Node{
 public:
     bool walls[4] = {false, false, false, false};
@@ -77,7 +76,7 @@ int main(int argc, char* argv[]) {
                    // 1 is returning to start
     int changed = 0; // 1 is the state of bot has changed between 'going to center' and 'going to start'
     Direction smallest;
-    Node nodes[64][64];
+    Node nodes[32][32];
     for(int i = 0; i < 256; i++){
         nodes[i/16][i%16].x = i/16;
         nodes[i/16][i%16].y = i%16;
@@ -100,10 +99,14 @@ int main(int argc, char* argv[]) {
         API::setColor(x, y, 'G');
         nodes[x][y].visited = true;
         nodes[x][y].init(facing, API::wallFront(), API::wallLeft(), API::wallRight());
-        nodes[x][y+1].walls[SOUTH] = nodes[x][y].walls[NORTH];
-        nodes[x][y-1].walls[NORTH] = nodes[x][y].walls[SOUTH];
-        nodes[x+1][y].walls[WEST] = nodes[x][y].walls[EAST];
-        nodes[x-1][y].walls[EAST] = nodes[x][y].walls[WEST];
+        if(y != 15)
+            nodes[x][y+1].walls[SOUTH] = nodes[x][y].walls[NORTH];
+        if(y != 0)
+            nodes[x][y-1].walls[NORTH] = nodes[x][y].walls[SOUTH];
+        if(x != 15)
+            nodes[x+1][y].walls[WEST] = nodes[x][y].walls[EAST];
+        if(x != 0)
+            nodes[x-1][y].walls[EAST] = nodes[x][y].walls[WEST];
         for(int i = 0; i < 4; i++){
             if (nodes[x][y].walls[i]) API::setWall(x, y, directions[i]);
         }
@@ -150,25 +153,25 @@ int main(int argc, char* argv[]) {
                 }
 
                 // Add all accessible neighbours to an array and keep track of its size
-                if(cr.walls[NORTH] == false){
+                if(cr.walls[NORTH] == false ){
                     Node& next = nodes[crNodePos.first][crNodePos.second+1];
                     minFound = std::min(minFound, next.value);
                     neighbours[neighboursFound] = &next;
                     neighboursFound++;
                 }
-                if(cr.walls[SOUTH] == false){
+                if(cr.walls[SOUTH] == false ){
                     Node& next = nodes[crNodePos.first][crNodePos.second-1];
                     minFound = std::min(minFound, next.value);
                     neighbours[neighboursFound] = &next;
                     neighboursFound++;
                 }
-                if(cr.walls[EAST] == false){
+                if(cr.walls[EAST] == false ){
                     Node& next = nodes[crNodePos.first+1][crNodePos.second];
                     minFound = std::min(minFound, next.value);
                     neighbours[neighboursFound] = &next;
                     neighboursFound++;
                 }
-                if(cr.walls[WEST] == false){
+                if(cr.walls[WEST] == false ){
                     Node& next = nodes[crNodePos.first-1][crNodePos.second];
                     minFound = std::min(minFound, next.value);
                     neighbours[neighboursFound] = &next;
@@ -188,7 +191,7 @@ int main(int argc, char* argv[]) {
         }
         
         // we assume that 1000 movement are sufficient
-        char movements[1000];
+        char movements[500];
         int numMovements = 0;
         // we will break out of this loop if bot is stuck and need flood fill to be run again(smallest == UNINITILIZED) or it has reached destination or it entered cell it hasn't visited before
         while(nodes[x][y].visited && changed == 0){

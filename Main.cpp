@@ -76,22 +76,29 @@ int main(int argc, char* argv[]) {
                    // 1 is returning to start
     int changed = 0; // 1 is the state of bot has changed between 'going to center' and 'going to start'
     Direction smallest;
-    Node nodes[32][32];
-    for(int i = 0; i < 256; i++){
-        nodes[i/16][i%16].x = i/16;
-        nodes[i/16][i%16].y = i%16;
-        nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
-        API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+    Node nodes[16][16];
+    for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].x = i/MAZE_SIZE;
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].y = i%MAZE_SIZE;
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = ((i/MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i/MAZE_SIZE) : (i/MAZE_SIZE - MAZE_SIZE/2)) + ((i%MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i%MAZE_SIZE) : (i%MAZE_SIZE - MAZE_SIZE/2));
+        API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
     }
 
     Direction facing = NORTH;
 
     API::setColor(0, 0, 'G');
-    for(int i = 0; i < 16; i++){
+    for(int i = 0; i < MAZE_SIZE; i++){
         nodes[0][i].walls[WEST] = true;
-        nodes[0][16 - i].walls[EAST] = true;
-        nodes[i][0].walls[WEST] = true;
-        nodes[16 - i][i].walls[WEST] = true;
+        API::setWall(0, i, directions[WEST]);
+
+        nodes[MAZE_SIZE - 1][i].walls[EAST] = true;
+        API::setWall(MAZE_SIZE - 1, i, directions[EAST]);
+
+        nodes[i][0].walls[SOUTH] = true;
+        API::setWall(i, 0, directions[SOUTH]);
+
+        nodes[i][MAZE_SIZE - 1].walls[NORTH] = true;
+        API::setWall(i, MAZE_SIZE - 1, directions[NORTH]);
     }
 
     while (true) {
@@ -99,11 +106,11 @@ int main(int argc, char* argv[]) {
         API::setColor(x, y, 'G');
         nodes[x][y].visited = true;
         nodes[x][y].init(facing, API::wallFront(), API::wallLeft(), API::wallRight());
-        if(y != 15)
+        if(y != MAZE_SIZE - 1)
             nodes[x][y+1].walls[SOUTH] = nodes[x][y].walls[NORTH];
         if(y != 0)
             nodes[x][y-1].walls[NORTH] = nodes[x][y].walls[SOUTH];
-        if(x != 15)
+        if(x != MAZE_SIZE - 1)
             nodes[x+1][y].walls[WEST] = nodes[x][y].walls[EAST];
         if(x != 0)
             nodes[x-1][y].walls[EAST] = nodes[x][y].walls[WEST];
@@ -123,8 +130,8 @@ int main(int argc, char* argv[]) {
                 q.push(make_pair(x, y - 1));
             }
             else{
-                for(int i = 0; i < 256; i++){
-                    q.push(make_pair(i/16, i%16));
+                for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
+                    q.push(make_pair(i/MAZE_SIZE, i%MAZE_SIZE));
                 }
                 changed = 0;
             }
@@ -138,7 +145,7 @@ int main(int argc, char* argv[]) {
                 int minFound = cr.value;
 
                 if(state == 0){
-                    if((crNodePos.first == 7 || crNodePos.first == 8) && (crNodePos.second == 7 || crNodePos.second == 8)){
+                    if((crNodePos.first == (MAZE_SIZE - 2)/2 || crNodePos.first == MAZE_SIZE/2) && (crNodePos.second == (MAZE_SIZE - 2)/2 || crNodePos.second == MAZE_SIZE/2)){
                         continue;
                     }
                 }
@@ -148,7 +155,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
                 // ignore if out of bounds
-                if(crNodePos.first > 15 || crNodePos.first < 0 || crNodePos.second > 15 || crNodePos.first < 0){
+                if(crNodePos.first > MAZE_SIZE - 1 || crNodePos.first < 0 || crNodePos.second > MAZE_SIZE - 1 || crNodePos.first < 0){
                     continue;
                 }
 
@@ -258,13 +265,13 @@ int main(int argc, char* argv[]) {
             }
 
             if(state == 0){
-                if((x == 7 || x == 8) && (y == 7 || y == 8)){
+                if((x == (MAZE_SIZE - 2)/2 || x == MAZE_SIZE/2) && (y == (MAZE_SIZE - 2)/2 || y == MAZE_SIZE/2)){
                     state = 1;
                     changed = 1;
                     smallest = UNINITILIZED;
-                    for(int i = 0; i < 256; i++){
-                        nodes[i/16][i%16].value = i/16 + i%16;
-                        API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+                    for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
+                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = i/MAZE_SIZE + i%MAZE_SIZE;
+                        API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
                     }
                 }
             }
@@ -273,9 +280,9 @@ int main(int argc, char* argv[]) {
                     state = 0; 
                     changed = 1;
                     smallest = UNINITILIZED;
-                    for(int i = 0; i < 256; i++){
-                        nodes[i/16][i%16].value = ((i/16 <= 7) ? (7 - i/16) : (i/16 - 8)) + ((i%16 <= 7) ? (7 - i%16) : (i%16 - 8));
-                        API::setText(i/16, i%16, std::to_string(nodes[i/16][i%16].value).c_str());
+                    for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
+                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = ((i/MAZE_SIZE <= (MAZE_SIZE - 2)/2) ? ((MAZE_SIZE - 2)/2 - i/MAZE_SIZE) : (i/MAZE_SIZE - MAZE_SIZE/2)) + ((i%MAZE_SIZE <= (MAZE_SIZE - 2)/2) ? ((MAZE_SIZE - 2)/2 - i%MAZE_SIZE) : (i%MAZE_SIZE - MAZE_SIZE/2));
+                        API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
                     }
                 }
             }

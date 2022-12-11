@@ -9,7 +9,6 @@
 using std::pair;
 using std::queue;
 using std::make_pair;
-using std::vector;
 
 enum Direction{
     EAST,
@@ -23,6 +22,7 @@ int MAZE_SIZE = 16;
 class Node{
 public:
     bool walls[4] = {false, false, false, false};
+    int value2 = 0;
     int value = 0;
     bool initilized = false;
     bool visited = false;
@@ -65,7 +65,6 @@ void turnByString(char* movements){
         }
         i++;
     }
-    std::cerr << i << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -81,6 +80,7 @@ int main(int argc, char* argv[]) {
         nodes[i/MAZE_SIZE][i%MAZE_SIZE].x = i/MAZE_SIZE;
         nodes[i/MAZE_SIZE][i%MAZE_SIZE].y = i%MAZE_SIZE;
         nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = ((i/MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i/MAZE_SIZE) : (i/MAZE_SIZE - MAZE_SIZE/2)) + ((i%MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i%MAZE_SIZE) : (i%MAZE_SIZE - MAZE_SIZE/2));
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2 = i/MAZE_SIZE + i%MAZE_SIZE;
         API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
     }
 
@@ -130,13 +130,10 @@ int main(int argc, char* argv[]) {
                 q.push(make_pair(x, y - 1));
             }
             else{
-                for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
-                    q.push(make_pair(i/MAZE_SIZE, i%MAZE_SIZE));
-                }
                 changed = 0;
             }
 
-            do{
+            while(!q.empty()){
                 pair<int, int> crNodePos = q.front();
                 q.pop();
                 Node& cr = nodes[crNodePos.first][crNodePos.second];
@@ -194,7 +191,7 @@ int main(int argc, char* argv[]) {
                         q.push(make_pair(neighbours[j]->x, neighbours[j]->y));    
                     }
                 }
-            }while(!q.empty());
+            }
         }
         
         // we assume that 1000 movement are sufficient
@@ -262,15 +259,20 @@ int main(int argc, char* argv[]) {
                 case WEST:
                     x--;
                     break;
+                case UNINITILIZED:
+                    break;
             }
 
+            int tp;
             if(state == 0){
                 if((x == (MAZE_SIZE - 2)/2 || x == MAZE_SIZE/2) && (y == (MAZE_SIZE - 2)/2 || y == MAZE_SIZE/2)){
                     state = 1;
                     changed = 1;
                     smallest = UNINITILIZED;
                     for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
-                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = i/MAZE_SIZE + i%MAZE_SIZE;
+                        tp = nodes[i/MAZE_SIZE][i%MAZE_SIZE].value;
+                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2;
+                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2 = tp;
                         API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
                     }
                 }
@@ -281,7 +283,9 @@ int main(int argc, char* argv[]) {
                     changed = 1;
                     smallest = UNINITILIZED;
                     for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
-                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = ((i/MAZE_SIZE <= (MAZE_SIZE - 2)/2) ? ((MAZE_SIZE - 2)/2 - i/MAZE_SIZE) : (i/MAZE_SIZE - MAZE_SIZE/2)) + ((i%MAZE_SIZE <= (MAZE_SIZE - 2)/2) ? ((MAZE_SIZE - 2)/2 - i%MAZE_SIZE) : (i%MAZE_SIZE - MAZE_SIZE/2));
+                        tp = nodes[i/MAZE_SIZE][i%MAZE_SIZE].value;
+                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2;
+                        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2 = tp;
                         API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
                     }
                 }

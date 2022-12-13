@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <queue>
 #include <utility>
@@ -18,7 +19,17 @@ enum Direction{
     UNINITILIZED
 };
 char directions[] = {'e', 'n', 'w', 's', 'u'};
+// we assume that 500 movement are sufficient
+char movements[500];
+int numMovements = 0;
 int MAZE_SIZE = 16;
+    int x = 0;
+    int y = 0;
+    int state = 0; // 0 is going to center
+                   // 1 is returning to start
+    int changed = 0; // 1 is the state of bot has changed between 'going to center' and 'going to start'
+    Direction smallest;
+    Direction facing = NORTH;
 class Node{
 public:
     bool walls[4] = {false, false, false, false};
@@ -31,12 +42,14 @@ public:
     {
         walls[facing] = frontWall;
         walls[(facing+1)%4] = leftWall;
-        walls[(facing+2)%4] = false;
+        if(x != 0 || y != 0)
+            walls[(facing+2)%4] = false;
         walls[(facing+3)%4] = rightWall;
     }
     Node(){
     }
 };
+    Node nodes[16][16];
 void log(const std::string& text) {
     std::cerr << text << std::endl;
 }
@@ -52,60 +65,14 @@ int getTurnDirection(Direction current, Direction target){
 // char can be L, R, F depending on the type of movement required
 // You can modify this function to accomodate diagonal movements
 void turnByString(char* movements){
-    int i = 0;
-    while(movements[i] != 0){
-        if(movements[i] == 'L'){
-            API::turnLeft();
-        }
-        if(movements[i] == 'R'){
-            API::turnRight();
-        }
-        if(movements[i] == 'F'){
-            API::moveForward();
-        }
-        i++;
-    }
 }
 
-int main(int argc, char* argv[]) {
-    log("Running...");
-    int x = 0;
-    int y = 0;
-    int state = 0; // 0 is going to center
-                   // 1 is returning to start
-    int changed = 0; // 1 is the state of bot has changed between 'going to center' and 'going to start'
-    Direction smallest;
-    Node nodes[16][16];
-    for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
-        nodes[i/MAZE_SIZE][i%MAZE_SIZE].x = i/MAZE_SIZE;
-        nodes[i/MAZE_SIZE][i%MAZE_SIZE].y = i%MAZE_SIZE;
-        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = ((i/MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i/MAZE_SIZE) : (i/MAZE_SIZE - MAZE_SIZE/2)) + ((i%MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i%MAZE_SIZE) : (i%MAZE_SIZE - MAZE_SIZE/2));
-        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2 = i/MAZE_SIZE + i%MAZE_SIZE;
-        API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
-    }
-
-    Direction facing = NORTH;
-
-    API::setColor(0, 0, 'G');
-    for(int i = 0; i < MAZE_SIZE; i++){
-        nodes[0][i].walls[WEST] = true;
-        API::setWall(0, i, directions[WEST]);
-
-        nodes[MAZE_SIZE - 1][i].walls[EAST] = true;
-        API::setWall(MAZE_SIZE - 1, i, directions[EAST]);
-
-        nodes[i][0].walls[SOUTH] = true;
-        API::setWall(i, 0, directions[SOUTH]);
-
-        nodes[i][MAZE_SIZE - 1].walls[NORTH] = true;
-        API::setWall(i, MAZE_SIZE - 1, directions[NORTH]);
-    }
-
-    while (true) {
+void updateMovementsString(bool frontWall, bool leftWall, bool rightWall){
+    // while (true) {
         // updating wall information
         API::setColor(x, y, 'G');
         nodes[x][y].visited = true;
-        nodes[x][y].init(facing, API::wallFront(), API::wallLeft(), API::wallRight());
+        nodes[x][y].init(facing, frontWall, leftWall, rightWall);
         if(y != MAZE_SIZE - 1)
             nodes[x][y+1].walls[SOUTH] = nodes[x][y].walls[NORTH];
         if(y != 0)
@@ -206,36 +173,54 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        // we assume that 1000 movement are sufficient
-        char movements[500];
-        int numMovements = 0;
+        numMovements = 0;
         // we will break out of this loop if bot is stuck and need flood fill to be run again(smallest == UNINITILIZED) or it has reached destination or it entered cell it hasn't visited before
         while(nodes[x][y].visited && changed == 0){
             // move to smallest neighbouring node
             smallest = UNINITILIZED;
             // this logic needs to be changed, bot should give higher preference to stright routes compaired to ones requiring turns
             //if no north wall then check north
+            int bestTurn = 5;
             if(nodes[x][y].walls[NORTH] == false){
                 if(nodes[x][y].value > nodes[x][y+1].value){
-                    smallest = NORTH;
+                    int crTurn = getTurnDirection(facing, NORTH);
+                    if(crTurn < bestTurn){
+                        smallest = NORTH;
+                        bestTurn = crTurn;
+                    }
                 }
             }
             if(nodes[x][y].walls[SOUTH] == false){
                 if(nodes[x][y].value > nodes[x][y-1].value){
-                    smallest = SOUTH;
+                    int crTurn = getTurnDirection(facing, SOUTH);
+                    if(crTurn < bestTurn){
+                        bestTurn = crTurn;
+                        smallest = SOUTH;
+                    }
                 }
             }
             if(nodes[x][y].walls[EAST] == false){
                 if(nodes[x][y].value > nodes[x+1][y].value){
-                    smallest = EAST;
+                    int crTurn = getTurnDirection(facing, EAST);
+                    if(crTurn < bestTurn){
+                        bestTurn = crTurn;  
+                        smallest = EAST;
+                    }
                 }
             }
             if(nodes[x][y].walls[WEST] == false){
                 if(nodes[x][y].value > nodes[x-1][y].value){
-                    smallest = WEST;
+                    int crTurn = getTurnDirection(facing, WEST);
+                    if(crTurn < bestTurn){
+                        bestTurn = crTurn;
+                        smallest = WEST;
+                    }
                 }
             }
             if(smallest == UNINITILIZED) break;
+            std::cerr << directions[facing] << " " << directions[smallest] << std::endl;
+            std::cerr << x << " " << y << std::endl;
+            std::cerr << nodes[0][0].walls[SOUTH] << std::endl;
             // change this so bot will make a single turn and not multiple
             int turn = getTurnDirection(facing, smallest);
             switch(turn){
@@ -304,6 +289,48 @@ int main(int argc, char* argv[]) {
             }
         }
         movements[numMovements] = 0;
-        turnByString(movements);
+    // }
+}
+int main(int argc, char* argv[]) {
+    log("Running...");
+    for(int i = 0; i < MAZE_SIZE*MAZE_SIZE; i++){
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].x = i/MAZE_SIZE;
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].y = i%MAZE_SIZE;
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value = ((i/MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i/MAZE_SIZE) : (i/MAZE_SIZE - MAZE_SIZE/2)) + ((i%MAZE_SIZE <= (MAZE_SIZE-2)/2) ? ((MAZE_SIZE-2)/2 - i%MAZE_SIZE) : (i%MAZE_SIZE - MAZE_SIZE/2));
+        nodes[i/MAZE_SIZE][i%MAZE_SIZE].value2 = i/MAZE_SIZE + i%MAZE_SIZE;
+        API::setText(i/MAZE_SIZE, i%MAZE_SIZE, std::to_string(nodes[i/MAZE_SIZE][i%MAZE_SIZE].value).c_str());
     }
+
+
+    API::setColor(0, 0, 'G');
+    for(int i = 0; i < MAZE_SIZE; i++){
+        nodes[0][i].walls[WEST] = true;
+        API::setWall(0, i, directions[WEST]);
+
+        nodes[MAZE_SIZE - 1][i].walls[EAST] = true;
+        API::setWall(MAZE_SIZE - 1, i, directions[EAST]);
+
+        nodes[i][0].walls[SOUTH] = true;
+        API::setWall(i, 0, directions[SOUTH]);
+
+        nodes[i][MAZE_SIZE - 1].walls[NORTH] = true;
+        API::setWall(i, MAZE_SIZE - 1, directions[NORTH]);
+    }
+    while (true) {
+        updateMovementsString(API::wallFront(), API::wallLeft(), API::wallRight());
+        int i = 0;
+        while(movements[i] != 0){
+            if(movements[i] == 'L'){
+                API::turnLeft();
+            }
+            if(movements[i] == 'R'){
+                API::turnRight();
+            }
+            if(movements[i] == 'F'){
+                API::moveForward();
+            }
+            i++;
+        }
+    }
+
 }

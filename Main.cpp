@@ -124,10 +124,14 @@ int main(int argc, char* argv[]) {
             // if changed is 0 add current cell and all its neighbours, o/w add all the cells to queue
             if(!changed){
                 q.push(make_pair(x, y));
-                q.push(make_pair(x + 1, y));
-                q.push(make_pair(x - 1, y));
-                q.push(make_pair(x, y + 1));
-                q.push(make_pair(x, y - 1));
+                if(x != MAZE_SIZE - 1)
+                    q.push(make_pair(x + 1, y));
+                if(x != 0)
+                    q.push(make_pair(x - 1, y));
+                if(y != MAZE_SIZE - 1)
+                    q.push(make_pair(x, y + 1));
+                if(y != 0)
+                    q.push(make_pair(x, y - 1));
             }
             else{
                 changed = 0;
@@ -187,9 +191,17 @@ int main(int argc, char* argv[]) {
                 if(minFound >= cr.value){
                     cr.value = minFound + 1;
                     API::setText(cr.x, cr.y, std::to_string(cr.value).c_str());
-                    for(int j = 0; j < neighboursFound; j++){
-                        q.push(make_pair(neighbours[j]->x, neighbours[j]->y));    
-                    }
+                    // for(int j = 0; j < neighboursFound; j++){
+                    //     q.push(make_pair(neighbours[j]->x, neighbours[j]->y));    
+                    // }
+                    if(crNodePos.first != MAZE_SIZE - 1)
+                        q.push(make_pair(crNodePos.first + 1, crNodePos.second));
+                    if(crNodePos.first != 0)
+                        q.push(make_pair(crNodePos.first - 1, crNodePos.second));
+                    if(crNodePos.second != MAZE_SIZE - 1)
+                        q.push(make_pair(crNodePos.first, crNodePos.second + 1));
+                    if(crNodePos.second != 0)
+                        q.push(make_pair(crNodePos.first, crNodePos.second - 1));
                 }
             }
         }
